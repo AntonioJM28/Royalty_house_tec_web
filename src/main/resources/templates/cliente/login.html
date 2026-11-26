@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout('Iniciar sesión', ~{::main})}">
+<main class="container narrow">
+    <section class="card">
+        <p class="eyebrow">Bienvenido</p>
+        <h1>Iniciar sesión</h1>
+        <p>Accede para consultar horarios y administrar tus reservas.</p>
+
+        <div class="alert error" role="alert" th:if="${error}" th:text="${error}"></div>
+        <div class="alert success" role="status" th:if="${mensaje}" th:text="${mensaje}"></div>
+
+        <form th:action="@{/login}" th:object="${loginForm}" method="post" class="form-stack">
+            <label for="correo">Correo electrónico</label>
+            <input id="correo" type="email" th:field="*{correo}" autocomplete="email" required>
+            <small class="field-error" th:errors="*{correo}"></small>
+
+            <label for="contrasena">Contraseña</label>
+            <input id="contrasena" type="password" th:field="*{contrasena}" autocomplete="current-password" required>
+            <small class="field-error" th:errors="*{contrasena}"></small>
+
+            <button type="submit">Entrar</button>
+        </form>
+        <p class="form-foot">¿Aún no tienes cuenta? <a th:href="@{/registro}">Regístrate</a>.</p>
+    </section>
+</main>
+</html>

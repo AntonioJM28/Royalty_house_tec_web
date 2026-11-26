@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout('Aviso', ~{::main})}">
+<main class="container narrow">
+    <section class="card">
+        <p class="eyebrow">No se pudo completar la solicitud</p>
+        <h1>Revisa esta información</h1>
+        <div class="alert error" role="alert" th:text="${error}">Ocurrió un error.</div>
+        <a class="button" th:href="@{/cliente/disponibilidad}">Volver a disponibilidad</a>
+    </section>
+</main>
+</html>

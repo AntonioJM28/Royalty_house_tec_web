@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout('Reserva confirmada', ~{::main})}">
+<main class="container narrow">
+    <section class="card confirmation-card">
+        <div class="confirmation-mark" aria-hidden="true">✓</div>
+        <p class="eyebrow">Reserva confirmada</p>
+        <h1>¡Te esperamos!</h1>
+        <p>Guarda tu código para identificar la reserva en el local.</p>
+        <div class="booking-code" th:text="${detalle.reserva.codigo}">AB12CD34</div>
+
+        <dl class="summary-list">
+            <dt>Recurso</dt>
+            <dd th:text="${detalle.recurso.nombre}">Recurso</dd>
+            <dt>Servicio</dt>
+            <dd th:if="${detalle.pelicula == null}"
+                th:text="${detalle.recurso.tipo.name() == 'MESA_VIP' ? 'Billar VIP' : 'Billar normal'}">Billar</dd>
+            <dd th:if="${detalle.pelicula != null}" th:text="${'Minicine · ' + detalle.pelicula.titulo}">Minicine</dd>
+            <dt>Fecha</dt>
+            <dd th:text="${#temporals.format(detalle.reserva.fecha, 'dd/MM/yyyy')}">Fecha</dd>
+            <dt>Horario</dt>
+            <dd th:text="${#temporals.format(detalle.reserva.horaInicio, 'HH:mm') + ' a ' + #temporals.format(detalle.horaFin, 'HH:mm')}">Horario</dd>
+            <dt>Duración</dt>
+            <dd th:text="${detalle.reserva.bloques + (detalle.reserva.bloques == 1 ? ' hora' : ' horas')}">Duración</dd>
+            <dt>Costo estimado</dt>
+            <dd class="price" th:text="${'$' + #numbers.formatDecimal(detalle.costoEstimado, 1, 2)}">$0.00</dd>
+        </dl>
+        <p class="notice">El pago se realiza en efectivo en el local.</p>
+        <div class="actions">
+            <a class="button" th:href="@{/cliente/reservas}">Ver mis reservas</a>
+            <a class="button secondary" th:href="@{/cliente/disponibilidad}">Hacer otra reserva</a>
+        </div>
+    </section>
+</main>
+</html>

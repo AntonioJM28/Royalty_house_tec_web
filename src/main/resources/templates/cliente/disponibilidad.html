@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout('Disponibilidad', ~{::main})}">
+<main class="container">
+    <section class="page-heading">
+        <p class="eyebrow">Encuentra tu próximo plan</p>
+        <h1>Consultar disponibilidad</h1>
+        <p>Selecciona el servicio, la fecha y revisa los bloques libres.</p>
+    </section>
+
+    <div class="alert error" role="alert" th:if="${error}" th:text="${error}"></div>
+
+    <section class="card">
+        <form th:action="@{/cliente/disponibilidad}" method="get" class="filter-form">
+            <label for="servicio">Servicio</label>
+            <select id="servicio" name="servicio" required>
+                <option value="">Selecciona un servicio</option>
+                <option value="billar" th:selected="${servicio == 'billar'}">Billar</option>
+                <option value="minicine" th:selected="${servicio == 'minicine'}">Minicine</option>
+            </select>
+
+            <label for="fecha">Fecha</label>
+            <input id="fecha" type="date" name="fecha" th:value="${fecha}" th:min="${fechaMinima}" required>
+
+            <div class="filter-extra" th:if="${servicio == 'billar'}">
+                <label for="tipo">Modalidad</label>
+                <select id="tipo" name="tipo" required>
+                    <option value="MESA_NORMAL" th:selected="${tipo == null or tipo.name() == 'MESA_NORMAL'}">Mesa normal</option>
+                    <option value="MESA_VIP" th:selected="${tipo != null and tipo.name() == 'MESA_VIP'}">Mesa VIP</option>
+                </select>
+            </div>
+
+            <div class="filter-extra" th:if="${servicio == 'minicine'}">
+                <label for="peliculaId">Película</label>
+                <select id="peliculaId" name="peliculaId" required>
+                    <option value="">Selecciona una película</option>
+                    <option th:each="pelicula : ${peliculas}" th:value="${pelicula.id}"
+                            th:text="${pelicula.titulo + ' (' + pelicula.duracionMin + ' min)'}"
+                            th:selected="${peliculaId != null and peliculaId == pelicula.id}"></option>
+                </select>
+            </div>
+            <button type="submit">Ver horarios</button>
+        </form>
+    </section>
+
+    <section th:if="${disponibilidad != null}" class="availability-section">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow" th:text="${#temporals.format(disponibilidad.fecha, 'EEEE d MMMM yyyy')}">Fecha</p>
+                <h2 th:if="${disponibilidad.tipoRecurso.name() == 'SALA_MINICINE'}"
+                    th:text="${'Minicine · ' + disponibilidad.pelicula.titulo}">Minicine</h2>
+                <h2 th:unless="${disponibilidad.tipoRecurso.name() == 'SALA_MINICINE'}"
+                    th:text="${disponibilidad.tipoRecurso.name() == 'MESA_VIP' ? 'Billar · Mesas VIP' : 'Billar · Mesas normales'}">Billar</h2>
+                <p th:if="${disponibilidad.tipoRecurso.name() == 'SALA_MINICINE'}"
+                   th:text="${'Duración estimada: ' + disponibilidad.bloquesRequeridos + ' bloques de una hora'}"></p>
+            </div>
+            <div class="legend">
+                <span><i class="legend-dot free"></i> Libre</span>
+                <span><i class="legend-dot busy"></i> No disponible</span>
+            </div>
+        </div>
+
+        <div class="empty-state" th:if="${#lists.isEmpty(disponibilidad.recursos)}">
+            No hay recursos activos para esta categoría.
+        </div>
+        <div class="empty-state" th:if="${!hayHorariosLibres}">
+            No hay horarios libres ese día. Prueba con otra fecha.
+        </div>
+
+        <article class="resource-card" th:each="item : ${disponibilidad.recursos}">
+            <div class="resource-title">
+                <h3 th:text="${item.recurso.nombre}">Mesa</h3>
+                <span th:text="${'Capacidad: ' + item.recurso.capacidad}">Capacidad</span>
+            </div>
+            <div class="block-grid">
+                <div class="time-block" th:each="bloque : ${item.bloques}"
+                     th:classappend="${bloque.disponible ? ' is-free' : ' is-busy'}">
+                    <strong th:text="${#temporals.format(bloque.horaInicio, 'HH:mm')}">10:00</strong>
+                    <span th:text="${bloque.disponible ? 'Libre' : 'No disponible'}">Libre</span>
+                </div>
+            </div>
+
+            <form th:if="${disponibilidad.tipoRecurso.name() == 'SALA_MINICINE'}"
+                  th:action="@{/cliente/reservas/minicine/resumen}" th:object="${formMinicine}"
+                  method="post" class="booking-form">
+                <input type="hidden" name="recursoId" th:value="${item.recurso.id}">
+                <input type="hidden" name="fecha" th:value="${disponibilidad.fecha}">
+                <input type="hidden" name="peliculaId" th:value="${disponibilidad.pelicula.id}">
+                <label th:for="${'hora-minicine-' + item.recurso.id}">Hora de inicio</label>
+                <select th:id="${'hora-minicine-' + item.recurso.id}" th:field="*{horaInicio}" required>
+                    <option value="">Elige un bloque libre</option>
+                    <option th:each="bloque : ${item.bloques}" th:if="${bloque.inicioDisponible}"
+                            th:value="${bloque.horaInicio}"
+                            th:text="${#temporals.format(bloque.horaInicio, 'HH:mm')}"></option>
+                </select>
+                <button type="submit" th:disabled="${#lists.isEmpty(item.bloques.?[inicioDisponible])}">
+                    Continuar
+                </button>
+            </form>
+
+            <form th:if="${disponibilidad.tipoRecurso.name() != 'SALA_MINICINE'}"
+                  th:action="@{/cliente/reservas/billar/resumen}" th:object="${formBillar}"
+                  method="post" class="booking-form">
+                <input type="hidden" name="recursoId" th:value="${item.recurso.id}">
+                <input type="hidden" name="fecha" th:value="${disponibilidad.fecha}">
+                <input type="hidden" name="tipo" th:value="${disponibilidad.tipoRecurso}">
+                <label th:for="${'hora-billar-' + item.recurso.id}">Hora de inicio</label>
+                <select th:id="${'hora-billar-' + item.recurso.id}" th:field="*{horaInicio}" required>
+                    <option value="">Elige un bloque libre</option>
+                    <option th:each="bloque : ${item.bloques}" th:if="${bloque.disponible}"
+                            th:value="${bloque.horaInicio}"
+                            th:text="${#temporals.format(bloque.horaInicio, 'HH:mm')}"></option>
+                </select>
+                <label th:for="${'duracion-billar-' + item.recurso.id}">Duración</label>
+                <select th:id="${'duracion-billar-' + item.recurso.id}" th:field="*{bloques}" required>
+                    <option value="">Bloques</option>
+                    <option value="1">1 hora</option>
+                    <option value="2">2 horas</option>
+                    <option value="3">3 horas</option>
+                    <option value="4">4 horas</option>
+                </select>
+                <button type="submit" th:disabled="${#lists.isEmpty(item.bloques.?[disponible])}">
+                    Continuar
+                </button>
+            </form>
+        </article>
+    </section>
+</main>
+</html>

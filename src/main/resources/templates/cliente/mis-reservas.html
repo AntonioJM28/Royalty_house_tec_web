@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout('Mis reservas', ~{::main})}">
+<main class="container">
+    <section class="page-heading">
+        <p class="eyebrow">Tu actividad</p>
+        <h1>Mis reservas</h1>
+        <p>Consulta los detalles o cancela hasta <span th:text="${horasLimiteCancelacion}">2</span> horas antes del inicio.</p>
+    </section>
+
+    <div class="alert error" role="alert" th:if="${error}" th:text="${error}"></div>
+    <div class="alert success" role="status" th:if="${mensaje}" th:text="${mensaje}"></div>
+
+    <section class="empty-state" th:if="${#lists.isEmpty(reservas)}">
+        <h2>Aún no tienes reservas</h2>
+        <p>Consulta la disponibilidad para elegir tu próximo horario.</p>
+        <a class="button" th:href="@{/cliente/disponibilidad}">Consultar disponibilidad</a>
+    </section>
+
+    <div class="reservation-list" th:unless="${#lists.isEmpty(reservas)}">
+        <article class="reservation-card" th:each="reserva : ${reservas}">
+            <div class="reservation-top">
+                <div>
+                    <span class="status" th:classappend="${' status-' + #strings.toLowerCase(reserva.estado.name())}"
+                          th:text="${reserva.estado}">CONFIRMADA</span>
+                    <h2 th:text="${'Reserva ' + reserva.codigo}">Reserva ABC12345</h2>
+                </div>
+                <p class="reservation-date" th:text="${#temporals.format(reserva.fecha, 'dd/MM/yyyy')}">Fecha</p>
+            </div>
+            <dl class="compact-list">
+                <dt>Hora</dt>
+                <dd th:text="${#temporals.format(reserva.horaInicio, 'HH:mm')}">Hora</dd>
+                <dt>Duración</dt>
+                <dd th:text="${reserva.bloques + (reserva.bloques == 1 ? ' hora' : ' horas')}">Duración</dd>
+                <dt>Recurso</dt>
+                <dd th:text="${'N.º ' + reserva.recursoId}">Recurso</dd>
+            </dl>
+            <form th:if="${reservasCancelables.contains(reserva.id)}"
+                  th:action="@{/cliente/reservas/{id}/cancelar(id=${reserva.id})}" method="post">
+                <button class="danger" type="submit">Cancelar reserva</button>
+            </form>
+            <p class="muted" th:if="${reserva.estado.name() == 'CONFIRMADA' and !reservasCancelables.contains(reserva.id)}">
+                Ya no es posible cancelar esta reserva porque falta menos del límite permitido.
+            </p>
+        </article>
+    </div>
+</main>
+</html>

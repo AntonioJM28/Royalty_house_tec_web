@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' | Royalty House'">Royalty House</title>
+    <link rel="stylesheet" th:href="@{/css/royalty-house.css}">
+</head>
+<body>
+<header th:fragment="header">
+    <div class="topbar">
+        <a class="brand" th:href="@{/}">Royalty House</a>
+        <nav aria-label="Navegación principal">
+            <a th:href="@{/cliente/disponibilidad}">Disponibilidad</a>
+            <a th:href="@{/cliente/reservas}">Mis reservas</a>
+            <form class="inline-form" th:action="@{/logout}" method="post">
+                <button class="link-button" type="submit">Cerrar sesión</button>
+            </form>
+        </nav>
+    </div>
+</header>
+
+<footer th:fragment="footer">
+    <p>Royalty House · Reservas de billar y minicine</p>
+</footer>
+
+<th:block th:fragment="layout(title, content)">
+    <html lang="es" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title th:text="${title} + ' | Royalty House'">Royalty House</title>
+        <link rel="stylesheet" th:href="@{/css/royalty-house.css}">
+    </head>
+    <body>
+    <header>
+        <div class="topbar">
+            <a class="brand" th:href="@{/}">Royalty House</a>
+            <nav aria-label="Navegación principal">
+                <a th:href="@{/cliente/disponibilidad}">Disponibilidad</a>
+                <a th:href="@{/cliente/reservas}">Mis reservas</a>
+                <form class="inline-form" th:action="@{/logout}" method="post">
+                    <button class="link-button" type="submit">Cerrar sesión</button>
+                </form>
+            </nav>
+        </div>
+    </header>
+    <main class="container" th:replace="${content}">
+        <section></section>
+    </main>
+    <footer>
+        <p>Royalty House · Reservas de billar y minicine</p>
+    </footer>
+    </body>
+    </html>
+</th:block>
+</body>
+</html>

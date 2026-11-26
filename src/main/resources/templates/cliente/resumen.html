@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout('Resumen de reserva', ~{::main})}">
+<main class="container narrow">
+    <section class="card">
+        <p class="eyebrow">Antes de confirmar</p>
+        <h1>Resumen de tu reserva</h1>
+        <dl class="summary-list">
+            <dt>Recurso</dt>
+            <dd th:text="${resumen.recurso.nombre}">Recurso</dd>
+            <dt>Modalidad</dt>
+            <dd th:if="${tipoServicio == 'billar'}"
+                th:text="${resumen.recurso.tipo.name() == 'MESA_VIP' ? 'Billar VIP' : 'Billar normal'}">Billar</dd>
+            <dd th:if="${tipoServicio == 'minicine'}"
+                th:text="${'Minicine · ' + resumen.pelicula.titulo}">Película</dd>
+            <dt>Fecha</dt>
+            <dd th:text="${#temporals.format(resumen.fecha, 'dd/MM/yyyy')}">Fecha</dd>
+            <dt>Horario</dt>
+            <dd th:text="${#temporals.format(resumen.horaInicio, 'HH:mm') + ' a ' + #temporals.format(resumen.horaFin, 'HH:mm')}">Horario</dd>
+            <dt>Duración</dt>
+            <dd th:text="${resumen.bloques + (resumen.bloques == 1 ? ' bloque' : ' bloques')}">Duración</dd>
+            <dt>Costo estimado</dt>
+            <dd class="price" th:text="${'$' + #numbers.formatDecimal(resumen.costoEstimado, 1, 2)}">$0.00</dd>
+        </dl>
+        <p class="notice">El pago se realiza en efectivo en el local.</p>
+
+        <form th:if="${tipoServicio == 'billar'}" th:action="@{/cliente/reservas/billar/confirmar}"
+              th:object="${formBillar}" method="post" class="form-stack">
+            <input type="hidden" name="recursoId" th:value="${formBillar.recursoId}">
+            <input type="hidden" name="fecha" th:value="${#temporals.format(formBillar.fecha, 'yyyy-MM-dd')}">
+            <input type="hidden" name="horaInicio" th:value="${formBillar.horaInicio}">
+            <input type="hidden" name="bloques" th:value="${formBillar.bloques}">
+            <input type="hidden" name="tipo" th:value="${formBillar.tipo}">
+            <div class="actions">
+                <a class="button secondary" th:href="@{/cliente/disponibilidad(servicio='billar', fecha=${resumen.fecha}, tipo=${resumen.recurso.tipo})}">Volver</a>
+                <button type="submit">Confirmar reserva</button>
+            </div>
+        </form>
+        <form th:if="${tipoServicio == 'minicine'}" th:action="@{/cliente/reservas/minicine/confirmar}"
+              th:object="${formMinicine}" method="post" class="form-stack">
+            <input type="hidden" name="recursoId" th:value="${formMinicine.recursoId}">
+            <input type="hidden" name="peliculaId" th:value="${formMinicine.peliculaId}">
+            <input type="hidden" name="fecha" th:value="${#temporals.format(formMinicine.fecha, 'yyyy-MM-dd')}">
+            <input type="hidden" name="horaInicio" th:value="${formMinicine.horaInicio}">
+            <div class="actions">
+                <a class="button secondary" th:href="@{/cliente/disponibilidad(servicio='minicine', fecha=${resumen.fecha}, peliculaId=${resumen.pelicula.id})}">Volver</a>
+                <button type="submit">Confirmar reserva</button>
+            </div>
+        </form>
+    </section>
+</main>
+</html>
