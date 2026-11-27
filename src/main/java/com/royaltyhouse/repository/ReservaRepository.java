@@ -23,11 +23,11 @@ public class ReservaRepository {
         return jdbcClient.sql("""
                         INSERT INTO reserva (
                             codigo, usuario_id, nombre_cliente, telefono_cliente,
-                            recurso_id, pelicula_id, fecha, hora_inicio, bloques, estado
+                            recurso_id, pelicula_id, fecha, hora_inicio, bloques, estado, asistentes
                         )
                         VALUES (
                             :codigo, :usuarioId, :nombreCliente, :telefonoCliente,
-                            :recursoId, :peliculaId, :fecha, :horaInicio, :bloques, :estado
+                            :recursoId, :peliculaId, :fecha, :horaInicio, :bloques, :estado, :asistentes
                         )
                         RETURNING id
                         """)
@@ -41,6 +41,7 @@ public class ReservaRepository {
                 .param("horaInicio", reserva.horaInicio())
                 .param("bloques", reserva.bloques())
                 .param("estado", reserva.estado().name())
+                .param("asistentes", reserva.asistentes())
                 .query(Long.class)
                 .single();
     }
@@ -57,7 +58,7 @@ public class ReservaRepository {
         return jdbcClient.sql("""
                         SELECT id, codigo, usuario_id, nombre_cliente, telefono_cliente,
                                recurso_id, pelicula_id, fecha, hora_inicio, bloques, estado,
-                               hora_entrada, hora_salida, creada_en
+                               hora_entrada, hora_salida, asistentes, creada_en
                         FROM reserva
                         WHERE usuario_id = :usuarioId
                         ORDER BY fecha DESC, hora_inicio DESC
@@ -82,6 +83,33 @@ public class ReservaRepository {
                 .single();
     }
 
+    public Optional<Reserva> buscarPorCodigo(String codigo) {
+        return jdbcClient.sql("""
+                        SELECT id, codigo, usuario_id, nombre_cliente, telefono_cliente,
+                               recurso_id, pelicula_id, fecha, hora_inicio, bloques, estado,
+                               hora_entrada, hora_salida, asistentes, creada_en
+                        FROM reserva
+                        WHERE codigo = :codigo
+                        """)
+                .param("codigo", codigo.trim().toUpperCase())
+                .query((rs, rowNum) -> mapearReserva(rs))
+                .optional();
+    }
+
+    public List<Reserva> buscarPorNombreCliente(String nombre) {
+        return jdbcClient.sql("""
+                        SELECT id, codigo, usuario_id, nombre_cliente, telefono_cliente,
+                               recurso_id, pelicula_id, fecha, hora_inicio, bloques, estado,
+                               hora_entrada, hora_salida, asistentes, creada_en
+                        FROM reserva
+                        WHERE LOWER(nombre_cliente) LIKE LOWER(:nombre)
+                        ORDER BY fecha DESC, hora_inicio DESC
+                        """)
+                .param("nombre", "%" + nombre.trim() + "%")
+                .query((rs, rowNum) -> mapearReserva(rs))
+                .list();
+    }
+
     public int actualizarEstado(long id, EstadoReserva estado) {
         return jdbcClient.sql("""
                         UPDATE reserva
@@ -93,11 +121,33 @@ public class ReservaRepository {
                 .update();
     }
 
+    public int registrarEntrada(long id, LocalTime horaEntrada) {
+        return jdbcClient.sql("""
+                        UPDATE reserva
+                        SET estado = 'EN_USO', hora_entrada = :horaEntrada
+                        WHERE id = :id
+                        """)
+                .param("horaEntrada", horaEntrada)
+                .param("id", id)
+                .update();
+    }
+
+    public int registrarSalida(long id, LocalTime horaSalida) {
+        return jdbcClient.sql("""
+                        UPDATE reserva
+                        SET estado = 'FINALIZADA', hora_salida = :horaSalida
+                        WHERE id = :id
+                        """)
+                .param("horaSalida", horaSalida)
+                .param("id", id)
+                .update();
+    }
+
     private Optional<Reserva> consultaReserva(long id, boolean bloquear) {
         var sql = """
                 SELECT id, codigo, usuario_id, nombre_cliente, telefono_cliente,
                        recurso_id, pelicula_id, fecha, hora_inicio, bloques, estado,
-                       hora_entrada, hora_salida, creada_en
+                       hora_entrada, hora_salida, asistentes, creada_en
                 FROM reserva
                 WHERE id = :id
                 """ + (bloquear ? " FOR UPDATE" : "");
@@ -124,6 +174,7 @@ public class ReservaRepository {
                 EstadoReserva.valueOf(rs.getString("estado")),
                 horaEntrada == null ? null : horaEntrada.toLocalTime(),
                 horaSalida == null ? null : horaSalida.toLocalTime(),
+                rs.getObject("asistentes", Integer.class),
                 rs.getObject("creada_en", java.time.OffsetDateTime.class));
     }
 }

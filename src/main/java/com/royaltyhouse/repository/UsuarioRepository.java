@@ -5,6 +5,7 @@ import com.royaltyhouse.model.Usuario;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -14,6 +15,21 @@ public class UsuarioRepository {
 
     public UsuarioRepository(JdbcClient jdbcClient) {
         this.jdbcClient = jdbcClient;
+    }
+
+    public List<Usuario> listarPersonal() {
+        return jdbcClient.sql("""
+                        SELECT id,nombre,correo,telefono,password_hash,rol,activo,acepto_datos
+                        FROM usuario WHERE rol IN ('RECEPCIONISTA','ADMINISTRADOR') ORDER BY correo
+                        """)
+                .query((rs, rowNum) -> new Usuario(rs.getLong("id"), rs.getString("nombre"), rs.getString("correo"),
+                        rs.getString("telefono"), rs.getString("password_hash"), Rol.valueOf(rs.getString("rol")),
+                        rs.getBoolean("activo"), rs.getBoolean("acepto_datos"))).list();
+    }
+
+    public void actualizarPersonal(long id, Rol rol, boolean activo) {
+        jdbcClient.sql("UPDATE usuario SET rol=:rol,activo=:activo WHERE id=:id")
+                .param("id", id).param("rol", rol.name()).param("activo", activo).update();
     }
 
     public Optional<Usuario> buscarPorCorreo(String correo) {
@@ -33,6 +49,23 @@ public class UsuarioRepository {
                         rs.getBoolean("activo"),
                         rs.getBoolean("acepto_datos")))
                 .optional();
+    }
+
+    public List<Usuario> buscarPorNombreOCorreo(String texto) {
+        return jdbcClient.sql("""
+                        SELECT id, nombre, correo, telefono, password_hash, rol, activo, acepto_datos
+                        FROM usuario
+                        WHERE activo = TRUE
+                          AND (LOWER(nombre) LIKE LOWER(:texto) OR LOWER(correo) LIKE LOWER(:texto))
+                        ORDER BY nombre
+                        """)
+                .param("texto", "%" + texto.trim() + "%")
+                .query((rs, rowNum) -> new Usuario(
+                        rs.getLong("id"), rs.getString("nombre"), rs.getString("correo"),
+                        rs.getString("telefono"), rs.getString("password_hash"),
+                        Rol.valueOf(rs.getString("rol")), rs.getBoolean("activo"),
+                        rs.getBoolean("acepto_datos")))
+                .list();
     }
 
     public Optional<Usuario> buscarPorId(long id) {

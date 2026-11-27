@@ -1,89 +1,117 @@
 # Royalty House
 
-Royalty House es una aplicación web académica para administrar reservas de mesas de billar normales y VIP, y salas de minicine. Esta fase implementa el módulo del cliente: creación de cuenta, inicio de sesión, consulta de disponibilidad por bloques de una hora, resumen y confirmación de reservas, consulta de reservas propias y cancelación dentro del plazo permitido.
+Sistema web académico para administrar reservas de mesas de billar normales y VIP, salas de minicine y consumos del candy bar.
 
-El backend usa Spring Boot con arquitectura MVC. Las vistas se renderizan con Thymeleaf y el acceso a PostgreSQL se realiza con `JdbcClient` y SQL propio; no se usa JPA/Hibernate. El esquema y los datos de demostración se inicializan desde `schema.sql` y `data.sql`.
+La aplicación está dividida por roles:
+
+- **CLIENTE:** disponibilidad, creación y cancelación de reservas.
+- **RECEPCIONISTA:** grilla operativa, reserva en mostrador, entrada/salida y consumos.
+- **ADMINISTRADOR:** recursos, tarifas, películas, horario, personal y reportes.
+
+## Tecnologías
+
+- Java 25.
+- Spring Boot 4.1.2 con MVC y Thymeleaf.
+- PostgreSQL.
+- `JdbcClient` y SQL directo.
+- Gradle Wrapper.
+- Sesiones HTTP propias; no se utiliza Spring Data JPA ni Spring Security.
+
+## Arquitectura
+
+La organización principal sigue `Controller -> Service -> Repository`:
+
+- Los `Controller` reciben solicitudes HTTP y seleccionan vistas.
+- Los `Service` aplican reglas de negocio y transacciones.
+- Los `Repository` ejecutan SQL con `JdbcClient`.
+- Los `model` son objetos simples: `record` y enumeraciones.
+- Las plantillas se encuentran en `src/main/resources/templates`.
 
 ## Requisitos
 
-- Java 25 (el proyecto configura ese toolchain).
-- PostgreSQL y una base de datos llamada `royaltyhouse`.
-- Gradle Wrapper incluido en el proyecto (Gradle 9.9.1).
+- Java 25.
+- PostgreSQL.
+- Base de datos llamada `royaltyhouse`.
 
-## Configuración de la base de datos
-
-La conexión está configurada en `src/main/resources/application.properties`. Verifica que la URL, el usuario y la contraseña correspondan a tu instalación local. La configuración actual apunta a:
+Configuración principal: `src/main/resources/application.properties`.
 
 ```text
 jdbc:postgresql://localhost:5432/royaltyhouse
 ```
 
-Si todavía no has creado la base, puedes hacerlo desde `psql` con un usuario que tenga permiso:
+Crear la base si todavía no existe:
 
 ```sql
 CREATE DATABASE royaltyhouse;
 ```
 
-Al iniciar la aplicación, `spring.sql.init.mode=always` ejecuta `schema.sql` y `data.sql`. Las tablas usan `IF NOT EXISTS` y los datos de ejemplo evitan duplicar registros en reinicios. Estos scripts son para desarrollo académico; no sustituyen un sistema de migraciones para producción.
+Al iniciar, `schema.sql` crea o modifica las tablas y `data.sql` carga usuarios y datos de demostración. Los scripts están preparados para desarrollo académico.
 
-## Levantar la aplicación
-
-Desde PowerShell, en la raíz del proyecto:
+## Ejecutar
 
 ```powershell
 .\gradlew.bat bootRun
 ```
 
-Abre [http://localhost:8080](http://localhost:8080). La raíz redirige al módulo de cliente; para iniciar sesión, visita [http://localhost:8080/login](http://localhost:8080/login).
+Abrir [http://localhost:8080](http://localhost:8080).
 
-Para detener el servidor, pulsa `Ctrl+C` en la terminal donde está ejecutándose `bootRun`.
-
-## Comandos útiles
-
-Ejecutar todas las pruebas:
+Comandos útiles:
 
 ```powershell
 .\gradlew.bat test
-```
-
-Compilar el código de producción:
-
-```powershell
 .\gradlew.bat compileJava
-```
-
-Crear el JAR ejecutable:
-
-```powershell
 .\gradlew.bat bootJar
-```
-
-Ejecutar el JAR generado (la ruta exacta puede variar con la versión del proyecto):
-
-```powershell
 java -jar .\build\libs\royaltyhouse-0.0.1-SNAPSHOT.jar
 ```
 
 ## Cuentas de demostración
 
-El archivo `src/main/resources/data.sql` incluye estas cuentas:
-
-| Rol | Correo | Contraseña de demostración |
+| Rol | Correo | Contraseña |
 |---|---|---|
 | Administrador | `admin@royaltyhouse.local` | `Admin123!` |
 | Recepcionista | `recepcion@royaltyhouse.local` | `Recepcion123!` |
 | Cliente | `cliente@royaltyhouse.local` | `Cliente123!` |
 
-En esta fase solo está implementado el módulo del cliente; las rutas `/cliente/**` requieren iniciar sesión con una cuenta cuyo rol sea `CLIENTE`.
+El usuario determina su redirección: administrador a `/admin`, recepcionista a `/recepcion` y cliente a `/cliente/disponibilidad`.
 
-## Nota sobre contraseñas
+## Acceso por vistas
 
-El proyecto calcula hashes SHA-256 con sal usando `MessageDigest`, sin librerías adicionales, por el alcance académico solicitado. No es una estrategia adecuada para proteger contraseñas en un sistema real: para producción debe usarse un algoritmo adaptativo de derivación de claves, junto con otras medidas de seguridad.
+- `/cliente/**`: solo `CLIENTE`.
+- `/recepcion/**`: `RECEPCIONISTA` y `ADMINISTRADOR`.
+- `/admin/**`: solo `ADMINISTRADOR`.
 
-## Alcance actual
+El acceso se controla con interceptores HTTP y el usuario guardado en la sesión, no con Spring Security.
 
-Incluye reservas de billar y minicine, con bloques de una hora. En minicine los bloques se calculan redondeando hacia arriba la duración de la película; en billar el cliente elige de uno a cuatro bloques. La base protege contra reservas simultáneas del mismo recurso, fecha y bloque mediante una restricción única.
+## Configuración configurable
 
-No incluye pagos electrónicos ni registro de pagos, consumos de candy bar desde el cliente, módulos operativos de recepcionista/administrador, notificaciones ni aplicación móvil.
+En `application.properties`:
 
-Para conocer la responsabilidad de cada clase, plantilla y paquete, consulta [DESCRIPCION-MODULOS.md](./DESCRIPCION-MODULOS.md).
+```properties
+royaltyhouse.reservas.horas-limite-cancelacion=2
+royaltyhouse.reservas.maximo-activas-por-cliente=2
+royaltyhouse.reservas.tolerancia-no-presentada-minutos=15
+```
+
+## Reglas principales
+
+- Los bloques se representan por horas dentro de `reserva_bloque`.
+- Una reserva billar dura entre una y cuatro horas.
+- Una reserva minicine usa un bloque por cada hora requerida, redondeando hacia arriba la duración de la película.
+- Minicine admite entre uno y siete asistentes.
+- Antes de insertar una reserva se vuelve a verificar el horario y los bloques ocupados.
+- `UNIQUE(recurso_id, fecha, bloque)` evita duplicar bloques ocupados en PostgreSQL.
+- La entrada pasa de `CONFIRMADA` a `EN_USO`; la salida pasa a `FINALIZADA` y libera los bloques.
+- No presentada también libera los bloques después de superar la tolerancia configurable.
+- Los consumos están permitidos únicamente en reservas minicine `EN_USO`.
+- El stock se descuenta al registrar el consumo, dentro de una transacción `@Transactional`.
+- Los reportes consideran únicamente reservas `FINALIZADAS`.
+- No se registra cobro ni pago.
+
+## Alcance
+
+Incluye cliente, recepcionista, administrador y reportes. No incluye OAuth real con Google, pagos electrónicos, facturación, impresión, notificaciones ni aplicación móvil. El proyecto conserva la autenticación existente por correo y contraseña y utiliza la tabla `usuario` como lista blanca de roles.
+
+## Documentación detallada
+
+- Explicación de backend y vistas: [LOGICA-BACKEND-VISTAS.md](./LOGICA-BACKEND-VISTAS.md).
+- Documentación previa de módulos: [DESCRIPCION-MODULOS.md](./DESCRIPCION-MODULOS.md).

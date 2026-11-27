@@ -18,6 +18,7 @@ public record Reserva(
         EstadoReserva estado,
         LocalTime horaEntrada,
         LocalTime horaSalida,
+        Integer asistentes,
         OffsetDateTime creadaEn
 ) {
 }

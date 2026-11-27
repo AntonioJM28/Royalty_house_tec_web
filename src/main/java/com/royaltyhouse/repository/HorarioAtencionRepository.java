@@ -15,6 +15,11 @@ public class HorarioAtencionRepository {
         this.jdbcClient = jdbcClient;
     }
 
+    public void actualizar(java.time.LocalTime apertura, java.time.LocalTime cierre) {
+        jdbcClient.sql("UPDATE horario_atencion SET hora_apertura=:apertura,hora_cierre=:cierre WHERE id=(SELECT id FROM horario_atencion ORDER BY id LIMIT 1)")
+                .param("apertura", apertura).param("cierre", cierre).update();
+    }
+
     public Optional<HorarioAtencion> buscarHorario() {
         return jdbcClient.sql("""
                         SELECT id, hora_apertura, hora_cierre

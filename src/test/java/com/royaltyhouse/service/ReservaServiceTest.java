@@ -133,6 +133,7 @@ class ReservaServiceTest {
                 EstadoReserva.CONFIRMADA,
                 null,
                 null,
+                null,
                 null);
         when(reservaRepository.buscarPorIdParaActualizar(30L)).thenReturn(Optional.of(reservaTardia));
 

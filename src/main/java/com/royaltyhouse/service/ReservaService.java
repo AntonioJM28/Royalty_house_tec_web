@@ -236,6 +236,7 @@ public class ReservaService {
                 EstadoReserva.CONFIRMADA,
                 null,
                 null,
+                null,
                 null);
         long reservaId = reservaRepository.insertar(nueva);
         for (int offset = 0; offset < bloques; offset++) {

@@ -13,6 +13,8 @@
         <nav aria-label="Navegación principal">
             <a th:href="@{/cliente/disponibilidad}">Disponibilidad</a>
             <a th:href="@{/cliente/reservas}">Mis reservas</a>
+            <a th:if="${session.usuarioAutenticado != null and (session.usuarioAutenticado.rol.name() == 'RECEPCIONISTA' or session.usuarioAutenticado.rol.name() == 'ADMINISTRADOR')}" th:href="@{/recepcion}">Recepción</a>
+            <a th:if="${session.usuarioAutenticado != null and session.usuarioAutenticado.rol.name() == 'ADMINISTRADOR'}" th:href="@{/admin}">Administración</a>
             <form class="inline-form" th:action="@{/logout}" method="post">
                 <button class="link-button" type="submit">Cerrar sesión</button>
             </form>

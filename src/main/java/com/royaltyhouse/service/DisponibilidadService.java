@@ -54,6 +54,10 @@ public class DisponibilidadService {
     }
 
     @Transactional(readOnly = true)
+    public List<com.royaltyhouse.model.Recurso> obtenerRecursosActivos() {
+        return recursoRepository.listarActivos();
+    }
+
     public List<Pelicula> listarPeliculasEnCartelera() {
         return peliculaRepository.listarEnCartelera();
     }

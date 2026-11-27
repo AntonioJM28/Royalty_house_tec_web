@@ -5,6 +5,7 @@ import com.royaltyhouse.model.TipoRecurso;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -14,6 +15,16 @@ public class TarifaRepository {
 
     public TarifaRepository(JdbcClient jdbcClient) {
         this.jdbcClient = jdbcClient;
+    }
+
+    public List<Tarifa> listarTodas() {
+        return jdbcClient.sql("SELECT id,tipo_recurso,precio_hora FROM tarifa ORDER BY tipo_recurso")
+                .query((rs, rowNum) -> new Tarifa(rs.getLong("id"), TipoRecurso.valueOf(rs.getString("tipo_recurso")), rs.getBigDecimal("precio_hora"))).list();
+    }
+
+    public void actualizar(TipoRecurso tipo, java.math.BigDecimal precio) {
+        jdbcClient.sql("UPDATE tarifa SET precio_hora=:precio WHERE tipo_recurso=:tipo")
+                .param("precio", precio).param("tipo", tipo.name()).update();
     }
 
     public Optional<Tarifa> buscarPorTipo(TipoRecurso tipoRecurso) {

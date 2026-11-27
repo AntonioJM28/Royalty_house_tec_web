@@ -29,8 +29,12 @@ public class AutenticacionController {
     }
 
     @GetMapping("/")
-    public String inicio() {
-        return "redirect:/cliente/disponibilidad";
+    public String inicio(jakarta.servlet.http.HttpSession sesion) {
+        Object usuario = sesion.getAttribute(SesionWeb.USUARIO);
+        if (usuario instanceof UsuarioSesion autenticado) {
+            return "redirect:" + com.royaltyhouse.config.RolInterceptor.rutaPrincipal(autenticado.rol());
+        }
+        return "redirect:/login";
     }
 
     @GetMapping("/registro")
@@ -61,7 +65,7 @@ public class AutenticacionController {
                     formulario.getContrasena(),
                     formulario.isAceptoDatos());
             iniciarSesion(request, usuario);
-            return "redirect:/cliente/disponibilidad";
+            return "redirect:" + com.royaltyhouse.config.RolInterceptor.rutaPrincipal(usuario.rol());
         } catch (CuentaYaRegistradaException | ReglaNegocioException exception) {
             model.addAttribute("error", exception.getMessage());
             return "cliente/registro";
@@ -89,7 +93,7 @@ public class AutenticacionController {
                     formulario.getCorreo(),
                     formulario.getContrasena());
             iniciarSesion(request, usuario);
-            return "redirect:/cliente/disponibilidad";
+            return "redirect:" + com.royaltyhouse.config.RolInterceptor.rutaPrincipal(usuario.rol());
         } catch (CredencialesInvalidasException exception) {
             model.addAttribute("error", exception.getMessage());
             return "cliente/login";
