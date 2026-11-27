@@ -86,4 +86,4 @@ Incluye reservas de billar y minicine, con bloques de una hora. En minicine los 
 
 No incluye pagos electrónicos ni registro de pagos, consumos de candy bar desde el cliente, módulos operativos de recepcionista/administrador, notificaciones ni aplicación móvil.
 
-Para conocer la responsabilidad de cada clase, plantilla y paquete, consulta [DESCRIPCION-MODULOS.md](./DESCRIPCION-MODULOS.md).
+Para una explicación del flujo MVC, consulta [LOGICA-MVC.md](./LOGICA-MVC.md). La responsabilidad detallada de cada clase, plantilla y paquete está en [DESCRIPCION-MODULOS.md](./DESCRIPCION-MODULOS.md).
